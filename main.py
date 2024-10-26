@@ -27,12 +27,31 @@ def add_name():
         json.dump(lessons, file)
 
 def loadstudent():
-    index = student_list.currentRow()
-    display.setText(students[index] + "\nεισάγετε τους βαθμούς στα μαθήματα, χωρισμένους από κόμματα και κενό (πχ '96, 85, 70, 89')")
-    i = 0
-    for key in lessons[students[index]]:
-        input_fields[i].setPlaceholderText(key + ':')
-        i += 1
+    global lessons
+    if len(students) > 0:
+        index = student_list.currentRow()
+        key = [students[index]]
+        keys = []  
+        for i in lessons[key[0]]:
+            keys.append(i) 
+        flag = True
+        for i in range(4):
+            if lessons[key[0]][keys[i]] != []:
+                flag = False
+        if not flag:
+            show_results()
+            i = 0
+            for key in lessons[students[index]]:
+                input_fields[i].setPlaceholderText(key + ':')
+                i += 1
+        else:
+            display.setText(students[index] + "\nεισάγετε τους βαθμούς στα μαθήματα, χωρισμένους από κόμματα και κενό (πχ '96, 85, 70, 89')")
+            i = 0
+            for key in lessons[students[index]]:
+                input_fields[i].setPlaceholderText(key + ':')
+                i += 1
+    else:
+        display.setText('εισάγετε και επιλέξτε μαθητή')
 
 def add_m():
     global lessons
@@ -45,7 +64,53 @@ def add_m():
         for k in j.text().split(', '):
             lessons[key][keys[i]].append(k)
         i += 1
-    print(lessons)
+    with open("names.json", "w") as file:
+        json.dump(lessons, file)
+    show_results()
+
+def show_results():
+    try:
+        key = students[student_list.currentRow()]
+        keys = []
+        mean = 0.0  
+        meanfinal = 0.0 
+        text = ''
+        text += key + '\n'
+        for i in lessons[key]:
+            keys.append(i)
+        i = 0
+        count = 0
+        for j in lessons[key]:
+            text += (j + ':')
+            for k in range(len(lessons[key][keys[i]])):
+                text += '\n' + lessons[key][keys[i]][k]
+                mean += float(lessons[key][keys[i]][k])
+                count += 1
+            if count > 0:
+                mean /= count
+                meanfinal += mean
+                text += "\nμέσος όρος: " + str(mean) + '\n'
+            i += 1
+            mean = 0
+            count = 0
+        meanfinal /= 4
+        text += '\nσυνολικός μέσος όρος: ' + str(meanfinal)
+        display.setText(text)
+    except:
+        pass
+
+def delete():
+    global lessons
+    global students
+    key = students[student_list.currentRow()]
+    del lessons[key]
+    students = []
+    student_list.clear()
+    for i in lessons:
+        student_list.addItem(i)
+        students.append(i)
+    with open("names.json", "w") as file:
+        json.dump(lessons, file)
 
 app = QApplication([])
 w = QWidget()
@@ -53,8 +118,9 @@ w.setWindowTitle("Βαθμοί μαθητών")
 w.resize(800, 600)
 student_list = QListWidget()
 students = []
-pb1 = QPushButton("add")
-pb2 = QPushButton('add')
+pb1 = QPushButton("εισαγωγή")
+pb2 = QPushButton('αποτέλεσματα:')
+pb3 = QPushButton('διαγραφή')
 studentname = QLineEdit()
 studentname.setPlaceholderText('Όνομα μαθητή:')
 major = QLineEdit()
@@ -75,6 +141,7 @@ lv1.addWidget(student_list)
 lv1.addWidget(studentname)
 lv1.addWidget(major)
 lv1.addWidget(pb1)
+lv1.addWidget(pb3)
 for key in lessons:
     student_list.addItem(key)
     students.append(key)
@@ -89,4 +156,5 @@ w.show()
 pb1.clicked.connect(add_s)
 student_list.currentRowChanged.connect(loadstudent)
 pb2.clicked.connect(add_m)
+pb3.clicked.connect(delete)
 app.exec()
